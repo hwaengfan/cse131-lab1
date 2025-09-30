@@ -1,0 +1,57 @@
+Example test 1: (add1 (sub1 5))
+Resulting .s:
+  section .text
+  global our_code_starts_here
+  our_code_starts_here:
+    mov rax, 5
+  sub rax, 1
+  add rax, 1
+    ret
+Restulting .run:
+  5
+
+Example test 2: 4
+Resulting .s:
+  section .text
+  global our_code_starts_here
+  our_code_starts_here:
+    mov rax, 4
+    ret
+Restulting .run:
+  4
+
+Example test 3: (negate (add1 3))
+Resulting .s:
+  section .text
+  global our_code_starts_here
+  our_code_starts_here:
+    mov rax, 3
+  add rax, 1
+  neg rax
+    ret
+Restulting .run:
+  -4
+
+Example test 4: (negate (sub1 0))
+Resulting .s:
+  section .text
+  global our_code_starts_here
+  our_code_starts_here:
+    mov rax, 0
+  sub rax, 1
+  neg rax
+    ret
+Restulting .run:
+  1
+
+Example test 5: (add1 (negate 3))
+Resulting .s:
+  section .text
+  global our_code_starts_here
+  our_code_starts_here:
+    mov rax, 3
+  neg rax
+  add rax, 1
+    ret
+Restulting .run:
+  -2
