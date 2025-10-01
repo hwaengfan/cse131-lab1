@@ -1,8 +1,10 @@
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
+use std::mem;
 use sexp::*;
 use sexp::Atom::*;
+use dynasmrt::{dynasm, DynasmApi};
 
 enum Expr {
 	Num(i32),
@@ -35,6 +37,24 @@ fn compile_expr(e: &Expr) -> String {
 	}
 }
 
+fn compile_ops(e : &Expr, ops : &mut dynasmrt::x64::Assembler) {
+	match e {
+		Expr::Num(n) => { dynasm!(ops ; .arch x64 ; mov rax, *n); }
+		Expr::Add1(subexpr) => {
+			compile_ops(&subexpr, ops);
+			dynasm!(ops ; .arch x64 ; add rax, 1);
+		}
+		Expr::Sub1(subexpr) => {
+			compile_ops(&subexpr, ops);
+			dynasm!(ops ; .arch x64 ; sub rax, 1);
+		}
+		Expr::Negate(subexpr) => {
+			compile_ops(&subexpr, ops);
+			dynasm!(ops ; .arch x64 ; neg rax);
+		}
+	}   
+}
+
 fn main() -> std::io::Result<()> {
 	let args: Vec<String> = env::args().collect();
 
@@ -57,6 +77,16 @@ our_code_starts_here:
 
 	let mut out_file = File::create(out_name)?;
 	out_file.write_all(asm_program.as_bytes())?;
+
+	// dynasm: generate machine code at runtime
+	let mut ops = dynasmrt::x64::Assembler::new().unwrap();
+	let start = ops.offset();
+	compile_ops(&expr, &mut ops);
+	dynasm!(ops ; .arch x64 ; ret);
+	let buf = ops.finalize().unwrap();
+	let jitted_fn: extern "C" fn() -> i64 = unsafe { mem::transmute(buf.ptr(start)) };
+	let result = jitted_fn();
+	println!("{}", result);
 
 	Ok(())
 }
